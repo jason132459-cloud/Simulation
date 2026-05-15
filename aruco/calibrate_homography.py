@@ -23,6 +23,7 @@ def main():
     clicked = []
     latest_frame = None
 
+    # 카메라 화면에서 경기장 네 모서리를 클릭해서 pixel 좌표를 수집한다.
     cap = cv2.VideoCapture(args.camera_id)
     if not cap.isOpened():
         raise RuntimeError(f"Could not open camera id {args.camera_id}")
@@ -41,6 +42,7 @@ def main():
     print("keys: u=undo, s=save after 4 clicks, q=quit")
 
     while True:
+        # 매 프레임마다 현재 클릭된 점을 화면 위에 표시한다.
         ret, frame = cap.read()
         if not ret:
             break
@@ -81,6 +83,8 @@ def main():
                 print("Need exactly 4 clicked corners before saving.")
                 continue
 
+            # pixel_points는 카메라 이미지 좌표, world_points는 실제 경기장 좌표(meter)다.
+            # 이 둘의 대응 관계로 homography H를 계산한다.
             pixel_points = np.array(clicked, dtype=np.float32)
             world_points = np.array(
                 [
@@ -96,6 +100,7 @@ def main():
                 print("Failed to compute homography.")
                 continue
 
+            # 이후 모든 클릭 지점과 ArUco 위치는 이 H를 통해 world 좌표로 변환된다.
             args.output.parent.mkdir(parents=True, exist_ok=True)
             np.savez(
                 args.output,
