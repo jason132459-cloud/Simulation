@@ -15,6 +15,7 @@ def parse_args():
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--width-m", type=float, default=2.4)
     parser.add_argument("--height-m", type=float, default=1.4)
+    parser.add_argument("--dshow", action="store_true", help="Use DirectShow camera backend on Windows.")
     return parser.parse_args()
 
 
@@ -24,7 +25,8 @@ def main():
     latest_frame = None
 
     # 카메라 화면에서 경기장 네 모서리를 클릭해서 pixel 좌표를 수집한다.
-    cap = cv2.VideoCapture(args.camera_id)
+    backend = cv2.CAP_DSHOW if args.dshow else cv2.CAP_ANY
+    cap = cv2.VideoCapture(args.camera_id, backend)
     if not cap.isOpened():
         raise RuntimeError(f"Could not open camera id {args.camera_id}")
 
@@ -45,6 +47,7 @@ def main():
         # 매 프레임마다 현재 클릭된 점을 화면 위에 표시한다.
         ret, frame = cap.read()
         if not ret:
+            print("Could not read a camera frame. Try --camera-id 1 or --dshow.")
             break
 
         latest_frame = frame.copy()
