@@ -67,6 +67,7 @@ def get_robot_pose_from_aruco(corners, ids, H, marker_id):
         if int(detected_id) != marker_id:
             continue
 
+        # 검출된 마커 꼭짓점은 pixel 좌표이므로 먼저 world 좌표로 변환한다.
         corner_px = corners[i].reshape(4, 2)
         corner_world = pixel_to_world(corner_px, H)
 
@@ -74,6 +75,7 @@ def get_robot_pose_from_aruco(corners, ids, H, marker_id):
         center = (p0 + p1 + p2 + p3) / 4.0
         front = (p0 + p1) / 2.0
 
+        # 마커의 위쪽 변 중앙을 front로 보고, center -> front 방향을 theta로 사용한다.
         dx = front[0] - center[0]
         dy = front[1] - center[1]
         theta = normalize_angle(math.atan2(dy, dx) + YAW_OFFSET_RAD)
@@ -95,13 +97,16 @@ def compute_control(robot_pose, target_point):
     angle_error = normalize_angle(target_angle - theta)
     dist_error = math.hypot(dx, dy)
 
+    # 방향 오차가 큰 상태에서는 전진하지 않고 먼저 회전하게 만든다.
     v = 0.0 if abs(angle_error) > 0.6 else 0.6 * dist_error
     w = 1.8 * angle_error
 
+    # 실제 로봇 명령으로 확장하기 쉽도록 선속도/각속도 범위를 제한한다.
     return max(min(v, 0.35), 0.0), max(min(w, 1.8), -1.8)
 
 
 def update_sim_pose(robot_pose, v, w, dt):
+    # differential drive/unicycle 모델의 아주 단순한 2D pose 적분이다.
     theta = robot_pose["theta"]
     robot_pose["x"] += v * math.cos(theta) * dt
     robot_pose["y"] += v * math.sin(theta) * dt
@@ -113,6 +118,7 @@ def draw_world_path(frame, H, path, color=(255, 0, 0)):
     if len(path) < 1:
         return
 
+    # path는 world 좌표로 저장되어 있으므로 화면 표시 전 pixel 좌표로 변환한다.
     path_px = world_to_pixel(path, H)
 
     for i in range(len(path_px) - 1):
@@ -135,6 +141,7 @@ def draw_pose(frame, H, pose, color=(0, 255, 0), label="robot"):
     center_world = np.array([[x, y]], dtype=np.float32)
     front_world = np.array([[x + length * math.cos(theta), y + length * math.sin(theta)]], dtype=np.float32)
 
+    # world 좌표의 로봇 위치와 진행 방향을 카메라 화면 위에 화살표로 그린다.
     center_px = world_to_pixel(center_world, H)[0]
     front_px = world_to_pixel(front_world, H)[0]
     c = tuple(center_px.astype(int))
@@ -178,9 +185,11 @@ def main():
 
         marker_pose = get_robot_pose_from_aruco(corners, ids, H, ROBOT_MARKER_ID)
         if sim_pose is None and marker_pose is not None:
+            # 시뮬레이션 모드에서는 실제 ArUco pose를 초기 위치로만 사용한다.
             sim_pose = marker_pose.copy()
             print(f"sim initialized: {sim_pose}")
 
+        # USE_MARKER_AS_STATE=True면 손으로 움직이는 실제 마커 위치가 현재 state가 된다.
         current_pose = marker_pose if USE_MARKER_AS_STATE else sim_pose
         v = 0.0
         w = 0.0
@@ -188,6 +197,7 @@ def main():
         if current_pose is not None and waypoint_index < len(path):
             target = path[waypoint_index]
             if distance_xy((current_pose["x"], current_pose["y"]), target) < 0.10:
+                # 목표 waypoint 근처에 도착하면 다음 waypoint로 넘어간다.
                 waypoint_index += 1
 
             if waypoint_index < len(path):
@@ -195,6 +205,7 @@ def main():
                 v, w = compute_control(current_pose, target)
 
                 if sim_pose is not None and not USE_MARKER_AS_STATE:
+                    # 실제 마커는 움직이지 않으므로, 가상 로봇 pose만 v, w로 업데이트한다.
                     sim_pose = update_sim_pose(sim_pose, v, w, dt)
 
         draw_world_path(frame, H, path, color=(255, 0, 0))
