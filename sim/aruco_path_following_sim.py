@@ -153,6 +153,15 @@ def draw_pose(frame, H, pose, color=(0, 255, 0), label="robot"):
 
 
 def main():
+    if not HOMOGRAPHY_FILE.exists():
+        raise FileNotFoundError(
+            f"{HOMOGRAPHY_FILE} not found. Run `python aruco/calibrate_homography.py` first."
+        )
+    if not PATH_FILE.exists():
+        raise FileNotFoundError(
+            f"{PATH_FILE} not found. Run `python tools/click_path.py` first."
+        )
+
     H = load_homography(HOMOGRAPHY_FILE)
     path = load_path(PATH_FILE)
     if not path:
