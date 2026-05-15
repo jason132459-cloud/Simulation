@@ -47,6 +47,12 @@ def draw_path(frame, H, path_world):
 
 def main():
     args = parse_args()
+    if not args.homography.exists():
+        raise FileNotFoundError(
+            f"{args.homography} not found. Run `python aruco/calibrate_homography.py` first, "
+            "click four arena corners, then press `s` to save."
+        )
+
     H = load_homography(args.homography)
     path_world = load_path(args.path)
 
