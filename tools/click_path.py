@@ -23,6 +23,7 @@ def draw_path(frame, H, path_world):
     if not path_world:
         return
 
+    # 저장된 목표점은 world 좌표이므로, 카메라 화면에 보이려면 pixel 좌표로 되돌린다.
     path_px = world_to_pixel(path_world, H)
 
     for i, point in enumerate(path_px):
@@ -59,6 +60,7 @@ def main():
         if event != cv2.EVENT_LBUTTONDOWN:
             return
 
+        # 클릭한 위치는 pixel 좌표다. 제어기에서 쓰기 위해 world 좌표(meter)로 변환한다.
         world = pixel_to_world([(x, y)], H)[0]
         waypoint = (float(world[0]), float(world[1]))
         path_world.append(waypoint)
@@ -71,6 +73,7 @@ def main():
     print("keys: u=undo, c=clear, s=save, q=quit")
 
     while True:
+        # 현재 카메라 화면 위에 지금까지 만든 path를 계속 덧그린다.
         ret, frame = cap.read()
         if not ret:
             break
@@ -97,6 +100,7 @@ def main():
             path_world.clear()
             print("cleared path")
         if key == ord("s"):
+            # 저장되는 값은 pixel이 아니라 homography를 통과한 world 좌표다.
             save_path(args.path, path_world)
             print(f"saved: {args.path}")
 
