@@ -2,6 +2,12 @@
 
 Camera-in-the-loop starter repo for testing ArUco pose estimation, clickable goal/path setup, and simple 2D path following without a physical robot.
 
+## VRX / Gazebo UAV-USV Simulator
+
+The ROS 2 Jazzy + Gazebo / VRX run commands for the UAV camera, ArUco target detection, and USV waypoint topics are documented here:
+
+- [VRX UAV-USV ArUco Simulator Run Guide](docs/vrx_uav_usv_run_guide.md)
+
 ## Setup
 
 ```bash
