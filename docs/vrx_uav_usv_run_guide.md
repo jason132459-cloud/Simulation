@@ -91,6 +91,166 @@ colcon build --merge-install --packages-select uav_usv_aruco
 source install/setup.bash
 ```
 
+To rebuild the whole workspace:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+cd ~/vrx_ws
+colcon build --merge-install
+source install/setup.bash
+```
+
+## VRX Base Run Commands
+
+Use these commands when you want to run VRX itself before running the UAV/ArUco pipeline.
+
+### 1. Start a clean terminal
+
+Do not type setup or ROS commands into a terminal that is already running Gazebo logs. Open a new WSL terminal.
+
+```bash
+conda deactivate
+source /opt/ros/jazzy/setup.bash
+cd ~/vrx_ws
+source install/setup.bash
+export GZ_SIM_RESOURCE_PATH=:$HOME/gazebo_maritime/models:$GZ_SIM_RESOURCE_PATH
+```
+
+Check the environment:
+
+```bash
+which ros2
+echo $GZ_SIM_RESOURCE_PATH
+```
+
+### 2. Run the customized `nbpark` world
+
+This is the main world used for the Parrot Bebop 2 + ArUco marker test.
+
+```bash
+ros2 launch vrx_gz vrx_environment.launch.py world:=nbpark
+```
+
+The customized `nbpark` world includes:
+
+```text
+parrot_bebop_2 at (-175, 1120, 8)
+my_roboboat at (-175, 1120, 0)
+ArUco marker on my_roboboat
+```
+
+### 3. Run VRX without GUI
+
+Use this when you only need topics and want less graphics load.
+
+```bash
+ros2 launch vrx_gz vrx_environment.launch.py world:=nbpark headless:=True
+```
+
+### 4. Start paused
+
+Use this for debugging world loading before physics starts.
+
+```bash
+ros2 launch vrx_gz vrx_environment.launch.py world:=nbpark paused:=True
+```
+
+### 5. Run the original VRX competition launch
+
+Use this when following the standard VRX competition launch flow.
+
+```bash
+ros2 launch vrx_gz competition.launch.py world:=nbpark
+```
+
+If a specific competition launch requires extra arguments, inspect available arguments with:
+
+```bash
+ros2 launch vrx_gz competition.launch.py --show-args
+```
+
+### 6. Show available VRX launch arguments
+
+```bash
+ros2 launch vrx_gz vrx_environment.launch.py --show-args
+```
+
+Common arguments include:
+
+```text
+world
+sim_mode
+bridge_competition_topics
+config_file
+robot
+headless
+paused
+competition_mode
+extra_gz_args
+```
+
+### 7. Check Gazebo / VRX topics
+
+In a second terminal:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+cd ~/vrx_ws
+source install/setup.bash
+
+ros2 topic list | head
+ros2 topic list | grep -E "clock|vrx|parrot|camera|wamv|goal|target"
+```
+
+Check Gazebo-native topics:
+
+```bash
+gz topic -l | grep -E "parrot|camera|image|nbpark|world"
+```
+
+### 8. Stop VRX
+
+In the terminal running Gazebo / VRX:
+
+```text
+Ctrl+C
+```
+
+Wait until the shell prompt returns before running another launch command.
+
+### 9. Common VRX startup problems
+
+If `ros2: command not found` appears:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+cd ~/vrx_ws
+source install/setup.bash
+```
+
+If custom models are missing, re-export the Gazebo model path:
+
+```bash
+export GZ_SIM_RESOURCE_PATH=:$HOME/gazebo_maritime/models:$GZ_SIM_RESOURCE_PATH
+```
+
+If Gazebo opens but the screen is black, wait a little, move the camera, or try software rendering:
+
+```bash
+export LIBGL_ALWAYS_SOFTWARE=1
+ros2 launch vrx_gz vrx_environment.launch.py world:=nbpark
+```
+
+If a world edit is not reflected, rebuild and restart Gazebo:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+cd ~/vrx_ws
+colcon build --merge-install --packages-select vrx_gz
+source install/setup.bash
+ros2 launch vrx_gz vrx_environment.launch.py world:=nbpark
+```
+
 ## Run Everything
 
 This launches the VRX `nbpark` world, the Parrot Bebop 2 camera bridge, ArUco detector, and waypoint generator.
